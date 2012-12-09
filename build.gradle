@@ -1,0 +1,88 @@
+apply plugin : 'java'
+
+group = 'com.ninja-squad'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.google.guava:guava:13.0.1'
+    testCompile 'junit:junit:4.+'
+    testCompile 'org.mockito:mockito-all:1.9.0'
+}
+
+configurations {
+    compile.transitive = false
+    testCompile.transitive = false
+    runtime.transitive = false
+    testRuntime.transitive = false
+}
+
+[compileJava, compileTestJava]*.options*.encoding = 'ISO-8859-1'
+
+def sharedManifest = manifest {
+    attributes(['Implementation-Title': project.name, 
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'ninja-squad.com'])
+}
+
+test {
+    scanForTestClasses = false
+    include "**/*Test.class" 
+    useJUnit()
+}
+
+jar {
+    manifest { 
+        from sharedManifest
+    }
+}
+
+javadoc {
+    options.noTimestamp true
+    options.linkSource true
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+    manifest { 
+        from sharedManifest
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+    manifest { 
+        from sharedManifest
+    }
+}
+
+task distributionZip(type: Zip, dependsOn: [javadoc, jar]) {
+    classifier = 'dist'
+    def rootDir = project.name + '-' + project.version;
+    into(rootDir) {
+        from jar.archivePath
+    }
+    into(rootDir + '/src') {
+        from sourceSets.main.java
+    }
+    into(rootDir + '/javadoc') {
+        from javadoc.destinationDir
+    }
+}
+
+assemble {
+    dependsOn distributionZip
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.3'
+}
