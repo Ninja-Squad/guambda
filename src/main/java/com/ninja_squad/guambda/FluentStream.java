@@ -11,17 +11,20 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.functions.BinaryOperator;
-import java.util.functions.Block;
-import java.util.functions.Combiner;
-import java.util.functions.Factory;
-import java.util.functions.FlatMapper;
-import java.util.functions.Mapper;
-import java.util.functions.Predicate;
-import java.util.functions.Predicates;
-import java.util.streams.Stream;
-import java.util.streams.StreamShape;
-import java.util.streams.Streamable;
+import java.util.function.BinaryOperator;
+import java.util.function.Block;
+import java.util.function.Combiner;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.function.FlatMapper;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Predicates;
+import java.util.stream.Spliterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamShape;
+import java.util.stream.Streamable;
+import java.util.stream.primitive.IntStream;
 
 public class FluentStream<T> implements Stream<T> {
     private final Stream<T> stream;
@@ -49,12 +52,42 @@ public class FluentStream<T> implements Stream<T> {
     }
     
     @Override
-    public <R> FluentStream<R> map(Mapper<? extends R, ? super T> mapper) {
+    public <R> FluentStream<R> map(Function<? super T, ? extends R> mapper) {
         return FluentStream.from(stream.map(mapper));
     }
 
     @Override
-    public <R> FluentStream<R> flatMap(FlatMapper<? extends R, ? super T> mapper) {
+    public IntStream map(IntFunction<? super T> mapper) {
+        return stream.map(mapper);
+    }
+
+    @Override
+    public FluentStream<T> skip(long n) {
+        return FluentStream.from(stream.skip(n));
+    }
+
+    @Override
+    public FluentStream<T> limit(long n) {
+        return FluentStream.from(stream.limit(n));
+    }
+
+    @Override
+    public FluentStream<T> slice(long skip, long limit) {
+        return FluentStream.from(stream.slice(skip, limit));
+    }
+
+    @Override
+    public Optional<T> max(Comparator<? super T> comparator) {
+        return stream.max(comparator);
+    }
+
+    @Override
+    public Optional<T> min(Comparator<? super T> comparator) {
+        return stream.min(comparator);
+    }
+
+    @Override
+    public <R> FluentStream<R> flatMap(FlatMapper<? super T, ? extends R> mapper) {
         return FluentStream.from(stream.flatMap(mapper));
     }
 
@@ -79,21 +112,6 @@ public class FluentStream<T> implements Stream<T> {
     }
 
     @Override
-    public FluentStream<T> limit(int n) {
-        return FluentStream.from(stream.limit(n));
-    }
-
-    @Override
-    public FluentStream<T> skip(int n) {
-        return FluentStream.from(stream.skip(n));
-    }
-
-    @Override
-    public FluentStream<T> concat(Stream<? extends T> other) {
-        return FluentStream.from(stream.concat(other));
-    }
-
-    @Override
     public <A extends Destination<? super T>> A into(A target) {
         target.addAll(this);
         return target;
@@ -105,15 +123,16 @@ public class FluentStream<T> implements Stream<T> {
     }
 
     @Override
-    public <U> Map<U, Collection<T>> groupBy(Mapper<? extends U, ? super T> classifier) {
+    public <U> Map<U, Collection<T>> groupBy(Function<? super T, ? extends U> classifier) {
         return stream.groupBy(classifier);
     }
 
     @Override
-    public <U, W> Map<U, W> reduceBy(Mapper<? extends U, ? super T> classifier,
-                                     Factory<W> baseFactory,
-                                     Combiner<W, W, T> reducer) {
-        return stream.reduceBy(classifier, baseFactory, reducer);
+    public <U, W> Map<U, W> reduceBy(Function<? super T, ? extends U> classifier,
+                                     Supplier<W> baseFactory,
+                                     Combiner<W, T, W> reducer,
+                                     BinaryOperator<W> combiner) {
+        return stream.reduceBy(classifier, baseFactory, reducer, combiner);
     }
 
     @Override
@@ -127,8 +146,8 @@ public class FluentStream<T> implements Stream<T> {
     }
 
     @Override
-    public <U> U fold(Factory<U> baseFactory,
-                      Combiner<U, U, T> reducer,
+    public <U> U fold(Supplier<U> baseFactory,
+                      Combiner<U, T, U> reducer,
                       BinaryOperator<U> combiner) {
         return stream.fold(baseFactory, reducer, combiner);
     }
@@ -167,12 +186,12 @@ public class FluentStream<T> implements Stream<T> {
     public FluentStream<T> unordered() {
         return FluentStream.from(stream.unordered());
     }
-    
-    @Override 
-    public StreamShape getShape() {
-        return stream.getShape();
+
+    @Override
+    public int getStreamFlags() {
+        return stream.getStreamFlags();
     }
-    
+
     @Override 
     public Iterator<T> iterator() {
         return stream.iterator();
@@ -182,7 +201,12 @@ public class FluentStream<T> implements Stream<T> {
     public boolean isParallel() {
         return stream.isParallel();
     }
-    
+
+    @Override
+    public Spliterator<T> spliterator() {
+        return stream.spliterator();
+    }
+
     @Override
     public String toString() {
         return stream.toString();
@@ -204,20 +228,20 @@ public class FluentStream<T> implements Stream<T> {
     }
     
     // It's there because it's not provided by Lambda and Guava, and useful
-    public <R> FluentStream<R> map(IndexedMapper<? extends R, ? super T> mapper) {
+    public <R> FluentStream<R> map(IndexedFunction<? super T, ? extends R> mapper) {
         return FluentStream.from(stream.sequential().map(new IndexedMapperWrapper<>(mapper)));
     }
     
     // It's there because it's not provided by Lambda and Guava, and useful
-    public <R> FluentStream<R> flatMap(IndexedFlatMapper<? extends R, ? super T> flatMapper) {
+    public <R> FluentStream<R> flatMap(IndexedFlatMapper<? super T, ? extends R> flatMapper) {
         return FluentStream.from(stream.sequential().flatMap(new IndexedFlatMapperWrapper<>(flatMapper)));
     }
     
     // It's there because FluentIterable has it, it's really useful, and Lambda doesn't have it
-    public <K> ImmutableMap<K, T> uniqueIndex(Mapper<? extends K, ? super T> toKeyMapper) {
+    public <K> ImmutableMap<K, T> uniqueIndex(Function<? super T, ? extends K> toKeyMapper) {
         ImmutableMap.Builder<K, T> builder = new ImmutableMap.Builder<>();
         forEach(t -> {
-            builder.put(toKeyMapper.map(t), t);
+            builder.put(toKeyMapper.apply(t), t);
         });
         return builder.build();
     }
@@ -266,17 +290,17 @@ public class FluentStream<T> implements Stream<T> {
     // It's there because FluentIterable has it, and it's a useful shortcut
     public Optional<T> findLast() {
         T t = com.google.common.collect.Iterators.getLast(iterator(), null);
-        return t == null ? Optional.<T>empty() : new Optional<T>(t);
+        return t == null ? Optional.<T>empty() : Optional.of(t);
     }
     
     // It's there because FluentIterable has it, and it's a useful shortcut
     public Optional<T> get(int position) {
         T t = com.google.common.collect.Iterators.get(iterator(), position, null);
-        return t == null ? Optional.<T>empty() : new Optional<>(t);
+        return t == null ? Optional.<T>empty() : Optional.of(t);
     }
     
     // It's there because it's a useful shortcut
-    public <K, M extends Multimap<K, T>> M multimap(M target, Mapper<? extends K, ? super T> mapper) {
+    public <K, M extends Multimap<K, T>> M multimap(M target, Function<? super T, ? extends K> mapper) {
         return this.into(MultimapDestination.from(target, mapper)).getTarget();
     }
 
@@ -289,8 +313,8 @@ public class FluentStream<T> implements Stream<T> {
         }
         
         @Override
-        public void apply(T t) {
-            indexedBlock.apply(index, t);
+        public void accept(T t) {
+            indexedBlock.accept(index, t);
             index++;
         }
     }
@@ -311,27 +335,27 @@ public class FluentStream<T> implements Stream<T> {
         }
     }
     
-    private static final class IndexedMapperWrapper<R, T> implements Mapper<R, T> {
-        private final IndexedMapper<? extends R, ? super T> indexedMapper;
+    private static final class IndexedMapperWrapper<R, T> implements Function<T, R> {
+        private final IndexedFunction<? super T, ? extends R> indexedFunction;
         private int index = 0;
         
-        private IndexedMapperWrapper(IndexedMapper<? extends R, ? super T> indexedMapper) {
-            this.indexedMapper = indexedMapper;
+        private IndexedMapperWrapper(IndexedFunction<? super T, ? extends R> indexedFunction) {
+            this.indexedFunction = indexedFunction;
         }
         
         @Override
-        public R map(T t) {
-            R result = indexedMapper.map(index, t);
+        public R apply(T t) {
+            R result = indexedFunction.apply(index, t);
             index++;
             return result;
         }
     }
     
-    private static final class IndexedFlatMapperWrapper<R, T> implements FlatMapper<R, T> {
-        private final IndexedFlatMapper<? extends R, ? super T> indexedFlatMapper;
+    private static final class IndexedFlatMapperWrapper<T, R> implements FlatMapper<T, R> {
+        private final IndexedFlatMapper<? super T, ? extends R> indexedFlatMapper;
         private int index = 0;
         
-        private IndexedFlatMapperWrapper(IndexedFlatMapper<? extends R, ? super T> indexedFlatMapper) {
+        private IndexedFlatMapperWrapper(IndexedFlatMapper<? super T, ? extends R> indexedFlatMapper) {
             this.indexedFlatMapper = indexedFlatMapper;
         }
         

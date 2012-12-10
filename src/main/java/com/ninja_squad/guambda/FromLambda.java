@@ -8,15 +8,16 @@ public final class FromLambda{
     private FromLambda() {
     }
     
-    public static <T> Predicate<T> toGuava(java.util.functions.Predicate<? super T> lambdaPredicate) {
+    public static <T> Predicate<T> toGuava(java.util.function.Predicate<? super T> lambdaPredicate) {
         return (T t) -> lambdaPredicate.test(t);
     }
     
-    public static <R, T> Function<T, R> toGuava(java.util.functions.Mapper<? extends R, ? super T> lambdaMapper) {
-        return (T t) -> lambdaMapper.map(t);
+    public static <T, R> Function<T, R> toGuava(java.util.function.Function<? super T, ? extends R> lambdaFunction) {
+        return (T t) -> lambdaFunction.apply(t);
     }
     
     public static <T> Optional<T> toGuava(java.util.Optional<? extends T> lambdaOptional) {
-        return Optional.fromNullable(lambdaOptional.orElse(null));
+        T nullable = lambdaOptional.isPresent() ? lambdaOptional.get() : null;
+        return Optional.fromNullable(nullable);
     }
 }

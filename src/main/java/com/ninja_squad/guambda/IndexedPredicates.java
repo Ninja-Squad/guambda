@@ -3,7 +3,7 @@ package com.ninja_squad.guambda;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.functions.Predicate;
+import java.util.function.Predicate;
 
 public final class IndexedPredicates {
     private IndexedPredicates() {

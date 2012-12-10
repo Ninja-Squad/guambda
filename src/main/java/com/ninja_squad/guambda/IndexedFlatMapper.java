@@ -1,7 +1,7 @@
 package com.ninja_squad.guambda;
 
-import java.util.functions.Block;
+import java.util.function.Block;
 
-public interface IndexedFlatMapper<R, T> {
+public interface IndexedFlatMapper<T, R> {
     void flatMapInto(Block<? super R> sink, int index, T t);
 }

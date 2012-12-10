@@ -1,7 +1,7 @@
 package com.ninja_squad.guambda;
 
 import java.util.*;
-import java.util.functions.*;
+import java.util.function.*;
 import com.google.common.collect.*;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -63,8 +63,8 @@ public class FluentStreamTest {
     @Test
     public void flatMapWithIndexedFlatMapperWorks() {
         List<Object> indicesAndFirstNames = FluentStream.from(persons).flatMap((Block<Object> sink, int i, Person p) -> {
-            sink.apply(i + 1);
-            sink.apply(p.getFirstName());
+            sink.accept(i + 1);
+            sink.accept(p.getFirstName());
         }).into(new ArrayList<>());
         assertEquals(Arrays.asList(1, "Agnes", 2, "Cyril", 3, "Cedric", 4, "JB"), indicesAndFirstNames);
     }
@@ -104,7 +104,7 @@ public class FluentStreamTest {
     
     @Test
     public void containsWorks() {
-        Mapper<String, Person> toFirstName = (p) -> p.getFirstName();
+        Function<Person, String> toFirstName = (p) -> p.getFirstName();
         assertTrue(FluentStream.from(persons).map(toFirstName).contains("JB"));
         assertFalse(FluentStream.from(persons).map(toFirstName).contains("Claire"));
     }

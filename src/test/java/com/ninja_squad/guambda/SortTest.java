@@ -24,7 +24,7 @@ public class SortTest {
     public void sortByWorks() {
         List<Person> list = new ArrayList<>(persons);
         
-        Collections.sort(list, Sort.by((Person p) -> p.getLastName()));
+        Collections.sort(list, Sort.<Person, String>by(p -> p.getLastName()));
         assertEquals(Arrays.asList(agnes, cedric, cyril, jb), list);
     }
 
@@ -32,7 +32,7 @@ public class SortTest {
     public void sortByWithComparatorWorks() {
         List<Person> list = new ArrayList<>(persons);
         
-        Collections.sort(list, Sort.by((Person p) -> p.getLastName(), Collections.reverseOrder()));
+        Collections.sort(list, Sort.<Person, String>by(p -> p.getLastName(), Collections.reverseOrder()));
         
         assertEquals(Arrays.asList(jb, cyril, cedric, agnes), list);
     }
@@ -41,7 +41,7 @@ public class SortTest {
     public void thenByWorks() {
         List<Person> list = new ArrayList<>(persons);
         
-        Collections.sort(list, Sort.by((Person p) -> p.getLastName().charAt(p.getLastName().length() - 1))
+        Collections.sort(list, Sort.<Person, Character>by(p -> p.getLastName().charAt(p.getLastName().length() - 1))
                                    .thenBy(p -> p.getAge()));
         assertEquals(Arrays.asList(cyril, cedric, agnes, jb), list);
     }
@@ -49,10 +49,20 @@ public class SortTest {
     @Test
     public void thenByWithComparatorWorks() {
         List<Person> list = new ArrayList<>(persons);
-        
-        Collections.sort(list, Sort.by((Person p) -> p.getLastName().charAt(p.getLastName().length() - 1))
+
+        Collections.sort(list, Sort.<Person, Character>by(p -> p.getLastName().charAt(p.getLastName().length() - 1))
                                    .thenBy(p -> p.getAge(), Collections.reverseOrder()));
         assertEquals(Arrays.asList(cyril, jb, agnes, cedric), list);
+    }
+    
+    @Test
+    public void sortWithWorks() {
+        List<Person> list = new ArrayList<>(persons);
+        
+        Comparator<Person> firstComparator = Comparators.<Person, Character>comparing(p -> p.getLastName().charAt(p.getLastName().length() - 1));
+        Collections.sort(list, Sort.with(firstComparator)
+                                   .thenBy(p -> p.getAge()));
+        assertEquals(Arrays.asList(cyril, cedric, agnes, jb), list);
     }
     
     private static final class Person {
