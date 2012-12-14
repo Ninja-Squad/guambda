@@ -64,7 +64,15 @@ public class SortTest {
                                    .thenBy(p -> p.getAge()));
         assertEquals(Arrays.asList(cyril, cedric, agnes, jb), list);
     }
-    
+
+    @Test
+    public void thenWithWorks() {
+        List<Person> list = new ArrayList<>(persons);
+        Collections.sort(list, Sort.<Person, Character>by(p -> p.getLastName().charAt(p.getLastName().length() - 1))
+                                   .thenWith((p1, p2) -> Integer.compare(p1.getAge(), p2.getAge())));
+        assertEquals(Arrays.asList(cyril, cedric, agnes, jb), list);
+    }
+
     private static final class Person {
         private final String firstName;
         private final String lastName;

@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BinaryOperator;
 import java.util.function.Block;
 import java.util.function.Combiner;
@@ -22,7 +23,6 @@ import java.util.function.Predicate;
 import java.util.function.Predicates;
 import java.util.stream.Spliterator;
 import java.util.stream.Stream;
-import java.util.stream.StreamShape;
 import java.util.stream.Streamable;
 import java.util.stream.primitive.IntStream;
 
@@ -214,7 +214,7 @@ public class FluentStream<T> implements Stream<T> {
     
     // It's there because it's not provided by Lambda and Guava, and useful
     public void forEach(IndexedBlock<? super T> block) {
-        stream.sequential().forEach(new IndexedBlockWrapper<>(block));
+        stream.sequential().forEach(new IndexedBlockWrapper<T>(block));
     }
     
     // It's there because it's not provided by Lambda and Guava, and useful
@@ -229,7 +229,7 @@ public class FluentStream<T> implements Stream<T> {
     
     // It's there because it's not provided by Lambda and Guava, and useful
     public <R> FluentStream<R> map(IndexedFunction<? super T, ? extends R> mapper) {
-        return FluentStream.from(stream.sequential().map(new IndexedMapperWrapper<>(mapper)));
+        return FluentStream.from(stream.sequential().map(new IndexedFunctionWrapper<>(mapper)));
     }
     
     // It's there because it's not provided by Lambda and Guava, and useful
@@ -240,7 +240,7 @@ public class FluentStream<T> implements Stream<T> {
     // It's there because FluentIterable has it, it's really useful, and Lambda doesn't have it
     public <K> ImmutableMap<K, T> uniqueIndex(Function<? super T, ? extends K> toKeyMapper) {
         ImmutableMap.Builder<K, T> builder = new ImmutableMap.Builder<>();
-        forEach(t -> {
+        stream.sequential().forEach(t -> {
             builder.put(toKeyMapper.apply(t), t);
         });
         return builder.build();
@@ -249,7 +249,7 @@ public class FluentStream<T> implements Stream<T> {
     // It's there because FluentIterable has it, it's really useful, and Lambda doesn't have it
     public ImmutableList<T> toList() {
         ImmutableList.Builder<T> builder = new ImmutableList.Builder<>();
-        forEach(t -> {
+        stream.sequential().forEach(t -> {
             builder.add(t);
         });
         return builder.build();
@@ -258,7 +258,7 @@ public class FluentStream<T> implements Stream<T> {
     // It's there because FluentIterable has it, it's really useful, and Lambda doesn't have it
     public ImmutableSet<T> toSet() {
         ImmutableSet.Builder<T> builder = new ImmutableSet.Builder<>();
-        forEach(t -> {
+        stream.sequential().forEach(t -> {
             builder.add(t);
         });
         return builder.build();
@@ -267,7 +267,7 @@ public class FluentStream<T> implements Stream<T> {
     // It's there because FluentIterable has it, it's really useful, and Lambda doesn't have it
     public ImmutableSortedSet<T> toSortedSet(Comparator<? super T> comparator) {
         ImmutableSortedSet.Builder<T> builder = new ImmutableSortedSet.Builder<>(comparator);
-        forEach(t -> {
+        stream.sequential().forEach(t -> {
             builder.add(t);
         });
         return builder.build();}
@@ -301,7 +301,7 @@ public class FluentStream<T> implements Stream<T> {
     
     // It's there because it's a useful shortcut
     public <K, M extends Multimap<K, T>> M multimap(M target, Function<? super T, ? extends K> mapper) {
-        return this.into(MultimapDestination.from(target, mapper)).getTarget();
+        return stream.into(MultimapDestination.from(target, mapper)).getTarget();
     }
 
     private static final class IndexedBlockWrapper<T> implements Block<T> {
@@ -314,11 +314,10 @@ public class FluentStream<T> implements Stream<T> {
         
         @Override
         public void accept(T t) {
-            indexedBlock.accept(index, t);
-            index++;
+            indexedBlock.accept(index++, t);
         }
     }
-    
+
     private static final class IndexedPredicateWrapper<T> implements Predicate<T> {
         private final IndexedPredicate<? super T> indexedPredicate;
         private int index = 0;
@@ -335,11 +334,11 @@ public class FluentStream<T> implements Stream<T> {
         }
     }
     
-    private static final class IndexedMapperWrapper<R, T> implements Function<T, R> {
+    private static final class IndexedFunctionWrapper<T, R> implements Function<T, R> {
         private final IndexedFunction<? super T, ? extends R> indexedFunction;
         private int index = 0;
         
-        private IndexedMapperWrapper(IndexedFunction<? super T, ? extends R> indexedFunction) {
+        private IndexedFunctionWrapper(IndexedFunction<? super T, ? extends R> indexedFunction) {
             this.indexedFunction = indexedFunction;
         }
         

@@ -3,6 +3,7 @@ package com.ninja_squad.guambda;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public final class FromGuava {
     private FromGuava() {
@@ -18,5 +19,9 @@ public final class FromGuava {
     
     public static <T> Optional<T> toLambda(com.google.common.base.Optional<? extends T> guavaOptional) {
         return guavaOptional.isPresent() ? Optional.of(guavaOptional.get()) : Optional.<T>empty();
+    }
+
+    public static <T> Supplier<T> toLambda(com.google.common.base.Supplier<? extends T> guavaSupplier) {
+        return () -> guavaSupplier.get();
     }
 }

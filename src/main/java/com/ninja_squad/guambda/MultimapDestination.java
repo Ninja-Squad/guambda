@@ -21,7 +21,7 @@ public class MultimapDestination<K, V, M extends Multimap<K, V>> implements Stre
     
     @Override
     public void addAll(Stream<? extends V> stream) {
-        stream.forEach((V v) -> {
+        stream.sequential().forEach((V v) -> {
             K key = mapper.apply(v);
             target.put(key, v);
         });

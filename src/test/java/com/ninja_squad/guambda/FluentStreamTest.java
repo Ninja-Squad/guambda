@@ -8,10 +8,10 @@ import static org.junit.Assert.*;
 
 public class FluentStreamTest {
 
-    Person agnes;
-    Person cyril;
-    Person cedric;
-    Person jb;
+    private Person agnes;
+    private Person cyril;
+    private Person cedric;
+    private Person jb;
     private List<Person> persons;
 
     @Before
@@ -140,7 +140,7 @@ public class FluentStreamTest {
         assertEquals(Sets.newHashSet(jb), personsByFirstCharOfFirstName.get('J'));
         assertEquals(Sets.newHashSet(agnes), personsByFirstCharOfFirstName.get('A'));
     }
-    
+
     private static final class Person {
         private final String firstName;
         private final String lastName;
